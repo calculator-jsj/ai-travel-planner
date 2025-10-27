@@ -1,7 +1,72 @@
-# Vue 3 + Vite
+# AI 旅行规划师 - 前端
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## 项目简介
 
-## Recommended IDE Setup
+该项目是 AI 旅行规划师的前端部分，提供用户创建行程、管理行程、预算管理、用户中心等功能。用户可以通过文字或语音输入旅行计划，AI 自动生成每日行程，并可在地图上查看景点和路线。
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+## 技术栈
+
+* Vue 3
+* Element Plus
+* Axios（与后端接口通信）
+* 高德地图 JS API（地图展示）
+* Vite（构建工具）
+
+## 前端页面功能
+
+1. **创建行程页**
+
+   * 输入目的地、天数、预算、人数、偏好
+   * 语音输入支持
+   * AI 自动生成行程
+   * 左侧显示文字行程，右侧显示地图路线
+
+2. **行程管理页**
+
+   * 查看历史行程列表
+   * 编辑或删除行程
+   * 可回顾地图路线
+
+3. **预算管理页**
+
+   * 显示各类费用
+   * 支持预算与实际开销记录
+   * 可生成图表统计（ECharts）
+
+4. **用户中心**
+
+   * 显示用户信息
+   * 收藏行程
+   * 设置偏好
+
+## 运行步骤
+
+1. 安装依赖：
+
+```bash
+npm install
+```
+
+2. 启动开发服务器：
+
+```bash
+npm run dev
+```
+
+3. 浏览器访问：
+
+```
+http://localhost:5173
+```
+
+4. 构建生产环境：
+
+```bash
+npm run build
+```
+
+## 注意事项
+
+* 高德地图 API 需要注册并获取 Key，替换 `CreatePlan.vue` 中的 `key`
+* 前端与后端接口请保持统一路径，例如 `/api/users`、`/api/plans` 等
+* 语音识别功能目前仅在支持 `webkitSpeechRecognition` 的浏览器中可用
