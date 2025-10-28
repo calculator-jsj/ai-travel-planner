@@ -37,6 +37,7 @@ const login = async () => {
     if (res.data.code === 1) {
       ElMessage.success('登录成功')
       localStorage.setItem('user', JSON.stringify(res.data.data))
+      localStorage.setItem('userId', res.data.data.id)
       router.push('/home/create')
     } else {
       ElMessage.error(res.data.msg || '登录失败')

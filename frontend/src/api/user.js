@@ -14,5 +14,19 @@ export function registerApi(data) {
 }
 
 export function getUserProfile() {
-  return axios.get(`${BASE_URL}/profile`)
+  return axios.get(`${BASE_URL}/preference`, {
+    params: {
+      userId: localStorage.getItem('userId')
+    }
+  })
 }
+
+export function saveUserPreferences(preferences, travelStyle) {
+  const userId = localStorage.getItem('userId')
+  return axios.post(`${BASE_URL}/preferences/save`, {
+    userId,
+    preferences,
+    travelStyle
+  })
+}
+

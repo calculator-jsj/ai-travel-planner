@@ -6,8 +6,8 @@
     </el-card>
 
     <el-card class="info-card">
-      <el-avatar :size="80" src="https://avatars.githubusercontent.com/u/583231?v=4" />
-      <h3>{{ user.name }}</h3>
+      <el-avatar :size="80" :src="user.avatar || defaultAvatar" />
+      <h3>{{ user.username || '未登录用户' }}</h3>
       <p>当前状态：<strong>已登录</strong></p>
     </el-card>
 
@@ -39,22 +39,61 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { getUserProfile } from '@/api/user'
+import { saveUserPreferences } from '@/api/user'
+
+const defaultAvatar = 'https://avatars.githubusercontent.com/u/583231?v=4'
 
 const user = ref({
-  name: '测试用户',
-  preferences: ['美食', '文化'],
-  defaultBudget: 8000,
-  travelStyle: '轻松休闲'
+  username: '',
+  avatar: '',
+  preferences: [],
+  travelStyle: ''
 })
 
-const saveSettings = () => {
-  ElMessage.success('用户设置已保存')
+// 页面加载时动态获取用户偏好和旅行风格
+onMounted(async () => {
+  const userId = localStorage.getItem('userId')
+  if (!userId) {
+    ElMessage.warning('未获取到用户ID，请先登录')
+    return
+  }
+  try {
+    const res = await getUserProfile()
+    console.log(res.data)
+    if (res.data.code === 1) {
+      user.value.preferences = res.data.data.preferences || []
+      user.value.travelStyle = res.data.data.travelStyle || ''
+      // 可选：如果后端返回了用户名/头像，也可以绑定
+      user.value.username = res.data.data.username || JSON.parse(localStorage.getItem('user')).username
+      user.value.avatar = res.data.data.avatar || ''
+    } else {
+      ElMessage.error(res.data.msg || '获取用户信息失败')
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('服务器连接失败')
+  }
+})
+
+const saveSettings = async () => {
+  try {
+    await saveUserPreferences(user.value.preferences, user.value.travelStyle)
+    ElMessage.success('用户设置已保存')
+  } catch (err) {
+    console.error(err)
+    ElMessage.error('保存失败，请稍后重试')
+  }
 }
 
+// 退出登录
 const logout = () => {
-  ElMessage.info('已退出登录')
+  localStorage.removeItem('userId')
+  localStorage.removeItem('user')
+  ElMessage.success('已退出登录')
+  window.location.href = '/login'
 }
 </script>
 
