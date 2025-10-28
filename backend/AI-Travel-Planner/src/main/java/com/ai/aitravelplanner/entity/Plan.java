@@ -19,8 +19,4 @@ public class Plan {
     private Integer status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    // 非表字段
-    private List<Spot> spots;
-    private List<Budget> budgets;
 }
