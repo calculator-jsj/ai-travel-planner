@@ -15,16 +15,35 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { loginApi } from '@/api/user'
 
 const router = useRouter()
 const username = ref('')
 const password = ref('')
 
-const login = () => {
-  if (username.value && password.value) {
-    router.push('/home/create')
-  } else {
-    alert('请输入用户名和密码')
+const login = async () => {
+  if (!username.value || !password.value) {
+    ElMessage.warning('请输入用户名和密码')
+    return
+  }
+
+  try {
+    const res = await loginApi({
+      username: username.value,
+      password: password.value
+    })
+
+    if (res.data.code === 1) {
+      ElMessage.success('登录成功')
+      localStorage.setItem('user', JSON.stringify(res.data.data))
+      router.push('/home/create')
+    } else {
+      ElMessage.error(res.data.msg || '登录失败')
+    }
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('服务器连接失败')
   }
 }
 
