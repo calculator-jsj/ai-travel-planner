@@ -23,10 +23,6 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="默认预算">
-          <el-input-number v-model="user.defaultBudget" :min="0" />
-        </el-form-item>
-
         <el-form-item label="旅行风格">
           <el-radio-group v-model="user.travelStyle">
             <el-radio label="轻松休闲" />
