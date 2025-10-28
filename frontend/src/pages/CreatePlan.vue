@@ -59,7 +59,6 @@
           </el-form>
         </el-card>
 
-        <!-- AI生成结果 -->
         <el-card v-if="planResult.length > 0" class="result-card">
           <h3>🧭 AI 生成的旅行计划</h3>
           <el-collapse v-model="activeDay">
@@ -69,9 +68,11 @@
               :title="'第 ' + (index + 1) + ' 天'"
               :name="index"
             >
-              <ul>
-                <li v-for="spot in day.spots" :key="spot.name">{{ spot.name }}</li>
-              </ul>
+              <li v-for="spot in day.spots" :key="spot.name">
+                <strong>{{ spot.name }}</strong>
+                <p class="spot-desc">{{ spot.description }}</p>
+              </li>
+
             </el-collapse-item>
           </el-collapse>
 
@@ -82,19 +83,23 @@
         </el-card>
       </el-col>
 
-      <!-- 右侧地图 -->
+      <!-- 右侧地图（暂未启用） -->
       <el-col :span="14">
         <el-card>
-          <div id="mapContainer" class="map"></div>
+          <div id="mapContainer" class="map">
+          <p>🗺️ 地图功能开发中，敬请期待...</p>
+          </div>
         </el-card>
       </el-col>
+
     </el-row>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { generateAIPlan } from '@/api/ai'
 
 const form = ref({
   destination: '',
@@ -110,10 +115,6 @@ const planResult = ref([])
 const loading = ref(false)
 const listening = ref(false)
 const activeDay = ref(0)
-
-let map = null
-let markers = []
-let polyline = null
 
 // 🎤 语音输入
 const startVoiceInput = () => {
@@ -138,7 +139,7 @@ const startVoiceInput = () => {
   }
 }
 
-// 模拟 AI 生成行程数据
+// 生成AI行程（调用后端）
 const generatePlan = async () => {
   if (!form.value.destination) {
     ElMessage.warning('请先输入目的地或使用语音输入')
@@ -147,86 +148,27 @@ const generatePlan = async () => {
 
   loading.value = true
   planResult.value = []
-  markers.forEach(m => m.setMap(null)) // 清空原有marker
-  polyline && polyline.setMap(null)
 
-  setTimeout(() => {
-    // 模拟数据，每天包含景点
-    planResult.value = [
-      {
-        spots: [
-          { name: '东京塔', lnglat: [139.745433, 35.658581] },
-          { name: '涩谷', lnglat: [139.703549, 35.659108] },
-          { name: '银座', lnglat: [139.764936, 35.674915] }
-        ]
-      },
-      {
-        spots: [
-          { name: '秋叶原', lnglat: [139.770102, 35.702069] },
-          { name: '上野公园', lnglat: [139.7745, 35.7138] }
-        ]
-      }
-    ]
-
-    // 地图上展示景点
-    updateMap()
+  try {
+    const res = await generateAIPlan(form.value)
+    if (res.data.code === 1 && res.data.data) {
+      planResult.value = res.data.data.plan
+      ElMessage.success('AI 行程生成完成')
+    } else {
+      ElMessage.error(res.data.msg || '生成失败，请稍后再试')
+    }
+  } catch (err) {
+    console.error(err)
+    ElMessage.error('服务器连接失败，请检查后端服务')
+  } finally {
     loading.value = false
-    ElMessage.success('AI 行程生成完成')
-  }, 2000)
-}
-
-// 初始化地图
-onMounted(() => {
-  const script = document.createElement('script')
-  script.src =
-    'https://webapi.amap.com/maps?v=2.0&key=你的高德Key&plugin=AMap.Driving'
-  document.head.appendChild(script)
-
-  script.onload = () => {
-    map = new AMap.Map('mapContainer', {
-      zoom: 12,
-      center: [139.767052, 35.681167] // 默认东京站
-    })
   }
-})
-
-// 更新地图显示
-const updateMap = () => {
-  if (!map) return
-
-  markers.forEach(m => m.setMap(null))
-  polyline && polyline.setMap(null)
-  markers = []
-
-  const path = []
-
-  planResult.value.forEach(day => {
-    day.spots.forEach(spot => {
-      const marker = new AMap.Marker({
-        position: spot.lnglat,
-        map,
-        title: spot.name
-      })
-      marker.on('click', () => {
-        const infoWindow = new AMap.InfoWindow({
-          content: `<strong>${spot.name}</strong>`,
-          offset: new AMap.Pixel(0, -30)
-        })
-        infoWindow.open(map, marker.getPosition())
-      })
-      markers.push(marker)
-      path.push(spot.lnglat)
-    })
-  })
-
-  polyline = new AMap.Polyline({
-    path,
-    strokeColor: '#409EFF',
-    strokeWeight: 4
-  })
-  polyline.setMap(map)
 }
+
+// 🔹 预留地图功能（暂不启用）
+// 你后续可以把高德地图逻辑加回来
 </script>
+
 
 <style scoped>
 .create-plan-container {
