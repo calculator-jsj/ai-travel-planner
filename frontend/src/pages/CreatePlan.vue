@@ -67,13 +67,14 @@
           </el-collapse>
 
           <div class="action-btns">
-            <el-button type="primary">💾 保存行程</el-button>
+            <el-button type="primary" @click="handleSavePlan">💾 保存行程</el-button>
             <el-button type="warning" @click="generatePlan">🔄 重新生成</el-button>
           </div>
         </el-card>
       </el-col>
 
-      <!-- 右侧地图 -->
+      
+
       <!-- 右侧地图 -->
       <el-col :span="14">
         <el-card>
@@ -90,10 +91,62 @@
           <transition name="fade">
             <div v-if="selectedSpot" class="spot-card">
               <h3>{{ selectedSpot.name }}</h3>
-              <p>{{ selectedSpot.description }}</p>
-              <p class="spot-type">🏷️ 类型：{{ selectedSpot.type }}</p>
+
+              <el-tabs v-model="activeTab">
+                <el-tab-pane label="景点信息" name="spot">
+                  <p>{{ selectedSpot.description }}</p>
+                  <p class="spot-type">🏷️ 类型：{{ selectedSpot.type }}</p>
+                </el-tab-pane>
+
+                <!-- 🚉 交通 -->
+                <el-tab-pane label="🚉 交通" name="traffic">
+                  <div class="nearby-cards">
+                    <div v-for="(item, index) in nearbyInfo.traffic.slice(0, 6)" :key="index" class="nearby-card">
+                      <img :src="item.photoUrl || `https://dummyimage.com/120x80/cccccc/ffffff&text=image not found`" />
+                      <div class="info">
+                        <h4>{{ item.name }}</h4>
+                        <p>{{ item.address || '暂无地址信息' }}</p>
+                      </div>
+                    </div>
+                    <p v-if="!nearbyInfo.traffic.length" class="no-data">暂无数据</p>
+                  </div>
+                </el-tab-pane>
+
+                <!-- 🏨 住宿 -->
+                <el-tab-pane label="🏨 住宿" name="hotel">
+                  <div class="nearby-cards">
+                    <div v-for="(item, index) in nearbyInfo.hotel.slice(0, 6)" :key="index" class="nearby-card">
+                      <img :src="item.photoUrl || `https://dummyimage.com/120x80/cccccc/ffffff&text=image not found`" alt="酒店" />
+                      <div class="info">
+                        <h4>{{ item.name }}</h4>
+                        <p>{{ item.address || '暂无地址信息' }}</p>
+                        <p class="tel">📞 {{ item.tel || '暂无电话' }}</p>
+                      </div>
+                    </div>
+                    <p v-if="!nearbyInfo.hotel.length" class="no-data">暂无数据</p>
+                  </div>
+                </el-tab-pane>
+
+                <!-- 🍽️ 餐饮 -->
+                <el-tab-pane label="🍽️ 餐饮" name="food">
+                  <div class="nearby-cards">
+                    <div v-for="(item, index) in nearbyInfo.food.slice(0, 6)" :key="index" class="nearby-card">
+                      <img :src="item.photoUrl || `https://dummyimage.com/120x80/cccccc/ffffff&text=image not found`" alt="餐饮" />
+                      <div class="info">
+                        <h4>{{ item.name }}</h4>
+                        <p>{{ item.address || '暂无地址信息' }}</p>
+                        <p class="tel">📞 {{ item.tel || '暂无电话' }}</p>
+                      </div>
+                    </div>
+                    <p v-if="!nearbyInfo.food.length" class="no-data">暂无数据</p>
+                  </div>
+                </el-tab-pane>
+
+              </el-tabs>
+
               <el-button type="primary" text size="small" @click="selectedSpot = null">关闭</el-button>
             </div>
+
           </transition>
         </el-card>
       </el-col>
@@ -106,6 +159,8 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { generateAIPlan } from '@/api/ai'
+import { getNearby } from '@/api/map'
+import { savePlan } from '@/api/plan'
 
 let map = null
 
@@ -117,6 +172,18 @@ const form = ref({
   preferences: []
 })
 
+// 附近信息（交通 / 餐饮 / 住宿）
+const nearbyInfo = ref({
+  traffic: [],
+  hotel: [],
+  food: []
+})
+
+// 当前选中的 Tab（spot / traffic / hotel / food）
+const activeTab = ref('spot')
+// const nearbyMarkers = ref([])  // 保存当前显示的附近 POI Marker
+
+
 const planResult = ref([])
 const selectedDay = ref(null)
 const activeDay = ref(0)
@@ -124,6 +191,7 @@ const loading = ref(false)
 const listening = ref(false)
 const selectedSpot = ref(null)
 const colors = ['#0078FF', '#28A745', '#FFC107', '#DC3545', '#6610F2', '#17A2B8']
+const amapKey = import.meta.env.VITE_AMAP_KEY
 
 // 🎤 语音输入
 const startVoiceInput = () => {
@@ -175,12 +243,10 @@ const generatePlan = async () => {
   }
 }
 
-const amapKey = import.meta.env.VITE_AMAP_KEY
-
 // 初始化地图
 onMounted(() => {
   const script = document.createElement('script')
-  script.src = `https://webapi.amap.com/maps?v=2.0&key=${amapKey}&plugin=AMap.ToolBar,AMap.Scale,AMap.Geocoder`
+  script.src = `https://webapi.amap.com/maps?v=2.0&key=${amapKey}&plugin=AMap.ToolBar,AMap.Scale,AMap.Geocoder,AMap.PlaceSearch`
   document.head.appendChild(script)
   script.onload = () => {
     map = new AMap.Map('mapContainer', {
@@ -216,6 +282,8 @@ const renderPlanOnMap = () => {
 
       marker.on('click', () => {
         selectedSpot.value = spot
+        activeTab.value = 'spot' // 默认显示景点信息
+        fetchNearbyInfo(spot)    // 获取周边数据
       })
 
       path.push([spot.lng, spot.lat])
@@ -236,6 +304,88 @@ const renderPlanOnMap = () => {
   })
 
   map.setFitView()
+}
+
+// 使用后端代理获取附近数据并展示
+const fetchNearbyInfo = async (spot) => {
+  if (!spot || !spot.lng || !spot.lat) return
+
+  // 清空旧数据（显示加载状态可以按需添加）
+  nearbyInfo.value.traffic = []
+  nearbyInfo.value.hotel = []
+  nearbyInfo.value.food = []
+
+  try {
+    // 交通
+    const resTraffic = await getNearby(spot.lng, spot.lat, 'traffic')
+    if (resTraffic && resTraffic.data) {
+      nearbyInfo.value.traffic = resTraffic.data || []
+    }
+
+    // 酒店
+    const resHotel = await getNearby(spot.lng, spot.lat, 'hotel')
+    if (resHotel && resHotel.data) {
+      nearbyInfo.value.hotel = resHotel.data || []
+    }
+
+    // 餐饮
+    const resFood = await getNearby(spot.lng, spot.lat, 'restaurant')
+    if (resFood && resFood.data) {
+      nearbyInfo.value.food = resFood.data || []
+    }
+
+    // （可选）在控制台查看返回结构，方便调试
+    console.log('nearby traffic', nearbyInfo.value.traffic)
+    console.log('nearby hotel', nearbyInfo.value.hotel)
+    console.log('nearby food', nearbyInfo.value.food)
+  } catch (err) {
+    console.error('fetchNearbyInfo error', err)
+  }
+}
+
+// 保存行程
+const handleSavePlan = async () => {
+  if (!form.value.destination || !planResult.value.length) {
+    ElMessage.warning('请先生成行程并填写必要信息')
+    return
+  }
+
+  const planName = prompt('请输入行程名称', '我的旅行计划')
+  if (!planName) return
+
+  const simplifiedPlan = planResult.value.map(day => ({
+    day: day.day,
+    spots: day.spots.map(spot => ({
+      name: spot.name,
+      type: spot.type,
+      description: spot.description
+    }))
+  }))
+
+  const payload = {
+    planName,
+    destination: form.value.destination,
+    days: form.value.days,
+    budget: form.value.budget,
+    people: form.value.people,
+    preferences: form.value.preferences,
+    plan: simplifiedPlan
+  }
+
+  // ✅ 在控制台打印 payload，验证格式
+  console.log('要发送的行程数据:', JSON.stringify(payload, null, 2))
+
+  try {
+    const res = await savePlan(payload)
+    if (res.data.code === 1) {
+      ElMessage.success('行程已保存！')
+    } else {
+      ElMessage.error(res.data.msg || '保存失败')
+    }
+  } catch (err) {
+    console.error(err)
+    ElMessage.error('服务器异常，保存失败')
+  }
 }
 </script>
 
@@ -296,7 +446,7 @@ const renderPlanOnMap = () => {
   background: #f9fafb;
   border-radius: 12px;
   padding: 15px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .spot-card h3 {
@@ -323,6 +473,80 @@ const renderPlanOnMap = () => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.spot-card {
+  margin-top: 10px;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.nearby-cards {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.nearby-card {
+  flex: 1;
+  min-width: 30%;
+  max-width: 32%;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.nearby-card:hover {
+  transform: translateY(-4px);
+}
+
+.nearby-card img {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-bottom: 1px solid #eee;
+}
+
+.nearby-card .info {
+  padding: 8px 10px;
+}
+
+.nearby-card h4 {
+  font-size: 14px;
+  color: #333;
+  margin: 0;
+  margin-bottom: 4px;
+}
+
+.nearby-card p {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.nearby-card .tel {
+  color: #409eff;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.no-data {
+  width: 100%;
+  text-align: center;
+  color: #999;
+  margin-top: 20px;
 }
 
 </style>

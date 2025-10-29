@@ -15,6 +15,9 @@ langchain4j:
       base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
       api-key: ${API-KEY}
       model-name: qwen-flash
+amap:
+  key: ${GAODE-MAP-KEY}
+
 
 server:
   port: 8080
