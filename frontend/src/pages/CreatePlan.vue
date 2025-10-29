@@ -48,12 +48,7 @@
             </div>
 
             <!-- 提交按钮 -->
-            <el-button
-              type="success"
-              class="generate-btn"
-              :loading="loading"
-              @click="generatePlan"
-            >
+            <el-button type="success" class="generate-btn" :loading="loading" @click="generatePlan">
               生成 AI 行程
             </el-button>
           </el-form>
@@ -62,17 +57,12 @@
         <el-card v-if="planResult.length > 0" class="result-card">
           <h3>🧭 AI 生成的旅行计划</h3>
           <el-collapse v-model="activeDay">
-            <el-collapse-item
-              v-for="(day, index) in planResult"
-              :key="index"
-              :title="'第 ' + (index + 1) + ' 天'"
-              :name="index"
-            >
-              <li v-for="spot in day.spots" :key="spot.name">
+            <el-collapse-item v-for="(day, index) in planResult" :key="index" :title="'第 ' + (index + 1) + ' 天'"
+              :name="index">
+              <li v-for="(spot, i) in day.spots" :key="i">
                 <strong>{{ spot.name }}</strong>
                 <p class="spot-desc">{{ spot.description }}</p>
               </li>
-
             </el-collapse-item>
           </el-collapse>
 
@@ -83,12 +73,28 @@
         </el-card>
       </el-col>
 
-      <!-- 右侧地图（暂未启用） -->
+      <!-- 右侧地图 -->
+      <!-- 右侧地图 -->
       <el-col :span="14">
         <el-card>
-          <div id="mapContainer" class="map">
-          <p>🗺️ 地图功能开发中，敬请期待...</p>
+          <div class="map-header">
+            <el-select v-model="selectedDay" placeholder="选择天数" size="medium" @change="renderPlanOnMap">
+              <el-option v-for="(day, index) in planResult" :key="index" :label="'第 ' + (index + 1) + ' 天'"
+                :value="index" />
+            </el-select>
           </div>
+
+          <div id="mapContainer" class="map"></div>
+
+          <!-- ✅ 点击景点后显示的卡片 -->
+          <transition name="fade">
+            <div v-if="selectedSpot" class="spot-card">
+              <h3>{{ selectedSpot.name }}</h3>
+              <p>{{ selectedSpot.description }}</p>
+              <p class="spot-type">🏷️ 类型：{{ selectedSpot.type }}</p>
+              <el-button type="primary" text size="small" @click="selectedSpot = null">关闭</el-button>
+            </div>
+          </transition>
         </el-card>
       </el-col>
 
@@ -97,9 +103,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { generateAIPlan } from '@/api/ai'
+
+let map = null
 
 const form = ref({
   destination: '',
@@ -109,12 +117,13 @@ const form = ref({
   preferences: []
 })
 
-// AI生成结果结构，每天包含景点数组
 const planResult = ref([])
-
+const selectedDay = ref(null)
+const activeDay = ref(0)
 const loading = ref(false)
 const listening = ref(false)
-const activeDay = ref(0)
+const selectedSpot = ref(null)
+const colors = ['#0078FF', '#28A745', '#FFC107', '#DC3545', '#6610F2', '#17A2B8']
 
 // 🎤 语音输入
 const startVoiceInput = () => {
@@ -139,7 +148,7 @@ const startVoiceInput = () => {
   }
 }
 
-// 生成AI行程（调用后端）
+//生成AI行程
 const generatePlan = async () => {
   if (!form.value.destination) {
     ElMessage.warning('请先输入目的地或使用语音输入')
@@ -154,6 +163,7 @@ const generatePlan = async () => {
     if (res.data.code === 1 && res.data.data) {
       planResult.value = res.data.data.plan
       ElMessage.success('AI 行程生成完成')
+      renderPlanOnMap()
     } else {
       ElMessage.error(res.data.msg || '生成失败，请稍后再试')
     }
@@ -165,10 +175,68 @@ const generatePlan = async () => {
   }
 }
 
-// 🔹 预留地图功能（暂不启用）
-// 你后续可以把高德地图逻辑加回来
-</script>
 
+// 初始化地图
+onMounted(() => {
+  map = new AMap.Map('mapContainer', {
+    zoom: 12,
+    center: [116.397, 39.908],
+  })
+
+  AMap.plugin(['AMap.ToolBar', 'AMap.Scale'], function () {
+    map.addControl(new AMap.ToolBar())
+    map.addControl(new AMap.Scale())
+  })
+})
+
+// 在地图上渲染AI路线
+const renderPlanOnMap = () => {
+  if (!map || planResult.value.length === 0) return
+  map.clearMap()
+
+  const daysToRender =
+    selectedDay.value !== null ? [planResult.value[selectedDay.value]] : planResult.value
+
+  daysToRender.forEach((day, i) => {
+    const dayIndex = selectedDay.value !== null ? selectedDay.value : i
+    const path = []
+
+    day.spots.forEach((spot, index) => {
+      const marker = new AMap.Marker({
+        position: [spot.lng, spot.lat],
+        map: map,
+        title: spot.name,
+        label: {
+          content: `D${day.day}-${index + 1}`,
+          direction: 'top',
+          offset: new AMap.Pixel(0, -25)
+        }
+      })
+
+      marker.on('click', () => {
+        selectedSpot.value = spot
+      })
+
+      path.push([spot.lng, spot.lat])
+    })
+
+    if (path.length > 1) {
+      const polyline = new AMap.Polyline({
+        path: path,
+        strokeColor: colors[dayIndex % colors.length],
+        strokeWeight: 5,
+        strokeOpacity: 0.9,
+        showDir: true,
+        isOutline: true,
+        outlineColor: '#ffffff'
+      })
+      polyline.setMap(map)
+    }
+  })
+
+  map.setFitView()
+}
+</script>
 
 <style scoped>
 .create-plan-container {
@@ -215,4 +283,45 @@ const generatePlan = async () => {
   width: 100%;
   height: 500px;
 }
+
+.map-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.spot-card {
+  margin-top: 10px;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.spot-card h3 {
+  margin: 0 0 5px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.spot-card p {
+  margin: 5px 0;
+  color: #555;
+}
+
+.spot-type {
+  font-style: italic;
+  color: #888;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 </style>

@@ -1,0 +1,105 @@
+// ✅ mock版本：使用静态数据，不请求后端
+// const generatePlan = async () => {
+//   if (!form.value.destination) {
+//     ElMessage.warning('请先输入目的地或使用语音输入')
+//     return
+//   }
+
+//   loading.value = true
+//   planResult.value = []
+
+//   try {
+//     // 模拟延迟
+//     await new Promise(resolve => setTimeout(resolve, 800))
+
+//     // 静态mock数据
+//     const mockData = {
+//       code: 1,
+//       msg: null,
+//       data: {
+//         plan: [
+//           {
+//             day: 1,
+//             spots: [
+//               {
+//                 name: '颐和园',
+//                 lng: 116.2756,
+//                 lat: 39.9996,
+//                 description: '中国现存规模最大、保存最完整的皇家园林。',
+//                 type: '自然'
+//               },
+//               {
+//                 name: '玉渊潭公园',
+//                 lng: 116.3165,
+//                 lat: 39.9069,
+//                 description: '以樱花闻名的城市公园，湖光山色与林木葱茏相映成趣。',
+//                 type: '自然'
+//               },
+//               {
+//                 name: '北京大学',
+//                 lng: 116.3162,
+//                 lat: 39.9986,
+//                 description: '中国最著名的高等学府之一，文化与历史的象征。',
+//                 type: '文化'
+//               }
+//             ]
+//           },
+//           {
+//             day: 2,
+//             spots: [
+//               {
+//                 name: '故宫博物院',
+//                 lng: 116.3974,
+//                 lat: 39.9181,
+//                 description: '明清两代皇宫，世界上现存最大、最完整的木质古建筑群。',
+//                 type: '文化'
+//               },
+//               {
+//                 name: '天安门广场',
+//                 lng: 116.3970,
+//                 lat: 39.9087,
+//                 description: '中国的政治与象征中心，国庆阅兵的举办地。',
+//                 type: '文化'
+//               },
+//               {
+//                 name: '王府井步行街',
+//                 lng: 116.4113,
+//                 lat: 39.9155,
+//                 description: '北京著名商业街，汇聚了美食与购物文化。',
+//                 type: '购物'
+//               }
+//             ]
+//           },
+//           {
+//             day: 3,
+//             spots: [
+//               {
+//                 name: '长城八达岭段',
+//                 lng: 116.0203,
+//                 lat: 40.3564,
+//                 description: '“不到长城非好汉”，著名旅游胜地，视野壮丽。',
+//                 type: '历史'
+//               },
+//               {
+//                 name: '鸟巢（国家体育场）',
+//                 lng: 116.3965,
+//                 lat: 39.9929,
+//                 description: '2008年北京奥运会主体育场，建筑设计独特。',
+//                 type: '地标'
+//               }
+//             ]
+//           }
+//         ]
+//       }
+//     }
+
+//     planResult.value = mockData.data.plan
+//     ElMessage.success('✅ 已加载本地示例行程数据')
+//     renderPlanOnMap()
+//   } catch (err) {
+//     console.error(err)
+//     ElMessage.error('加载示例数据失败')
+//   } finally {
+//     loading.value = false
+//   }
+// }
