@@ -175,18 +175,19 @@ const generatePlan = async () => {
   }
 }
 
+const amapKey = import.meta.env.VITE_AMAP_KEY
 
 // 初始化地图
 onMounted(() => {
-  map = new AMap.Map('mapContainer', {
-    zoom: 12,
-    center: [116.397, 39.908],
-  })
-
-  AMap.plugin(['AMap.ToolBar', 'AMap.Scale'], function () {
-    map.addControl(new AMap.ToolBar())
-    map.addControl(new AMap.Scale())
-  })
+  const script = document.createElement('script')
+  script.src = `https://webapi.amap.com/maps?v=2.0&key=${amapKey}&plugin=AMap.ToolBar,AMap.Scale,AMap.Geocoder`
+  document.head.appendChild(script)
+  script.onload = () => {
+    map = new AMap.Map('mapContainer', {
+      zoom: 12,
+      center: [116.397, 39.908],
+    })
+  }
 })
 
 // 在地图上渲染AI路线
