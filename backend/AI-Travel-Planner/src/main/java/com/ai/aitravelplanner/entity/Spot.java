@@ -10,8 +10,8 @@ public class Spot {
     private Long planId;
     private Integer day;
     private String name;
-    private BigDecimal lng;
-    private BigDecimal lat;
+    private Double lng;
+    private Double lat;
     private String type;
     private String description;
     private Integer orderIndex;

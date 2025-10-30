@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ai.aitravelplanner.mapper.PlanMapper">
+
+    <select id="searchPlans" resultType="com.ai.aitravelplanner.entity.Plan">
+        SELECT *
+        FROM plan
+        WHERE user_id = #{userId}
+
+        <if test="planName != null and planName != ''">
+            AND title LIKE CONCAT('%', #{planName}, '%')
+        </if>
+
+        <if test="preferences != null and preferences != ''">
+            <!-- 支持多偏好模糊查询 -->
+            <foreach item="pref" collection="preferences.split(',')" open="AND (" separator=" OR " close=")">
+                preferences LIKE CONCAT('%', #{pref}, '%')
+            </foreach>
+        </if>
+
+        <if test="budgetMin != null">
+            AND budget >= #{budgetMin}
+        </if>
+
+        <if test="budgetMax != null">
+            AND budget &lt;= #{budgetMax}
+        </if>
+
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>

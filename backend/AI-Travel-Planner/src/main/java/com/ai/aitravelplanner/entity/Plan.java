@@ -14,7 +14,7 @@ public class Plan {
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer days;
-    private BigDecimal budget;
+    private Double budget;
     private String preferences; // 存 JSON 字符串 ["美食","动漫"]
     private Integer status;
     private LocalDateTime createdAt;

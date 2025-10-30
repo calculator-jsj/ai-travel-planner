@@ -67,13 +67,11 @@
           </el-collapse>
 
           <div class="action-btns">
-            <el-button type="primary" @click="handleSavePlan">💾 保存行程</el-button>
+            <el-button type="primary" @click="openSaveDialog">💾 保存行程</el-button>
             <el-button type="warning" @click="generatePlan">🔄 重新生成</el-button>
           </div>
         </el-card>
       </el-col>
-
-      
 
       <!-- 右侧地图 -->
       <el-col :span="14">
@@ -116,7 +114,8 @@
                 <el-tab-pane label="🏨 住宿" name="hotel">
                   <div class="nearby-cards">
                     <div v-for="(item, index) in nearbyInfo.hotel.slice(0, 6)" :key="index" class="nearby-card">
-                      <img :src="item.photoUrl || `https://dummyimage.com/120x80/cccccc/ffffff&text=image not found`" alt="酒店" />
+                      <img :src="item.photoUrl || `https://dummyimage.com/120x80/cccccc/ffffff&text=image not found`"
+                        alt="酒店" />
                       <div class="info">
                         <h4>{{ item.name }}</h4>
                         <p>{{ item.address || '暂无地址信息' }}</p>
@@ -131,7 +130,8 @@
                 <el-tab-pane label="🍽️ 餐饮" name="food">
                   <div class="nearby-cards">
                     <div v-for="(item, index) in nearbyInfo.food.slice(0, 6)" :key="index" class="nearby-card">
-                      <img :src="item.photoUrl || `https://dummyimage.com/120x80/cccccc/ffffff&text=image not found`" alt="餐饮" />
+                      <img :src="item.photoUrl || `https://dummyimage.com/120x80/cccccc/ffffff&text=image not found`"
+                        alt="餐饮" />
                       <div class="info">
                         <h4>{{ item.name }}</h4>
                         <p>{{ item.address || '暂无地址信息' }}</p>
@@ -152,6 +152,21 @@
       </el-col>
 
     </el-row>
+
+    <!-- 保存行程对话框 -->
+    <el-dialog title="保存行程" v-model="saveDialogVisible" width="400px" align-center>
+      <el-form :model="saveForm" label-width="100px">
+        <el-form-item label="行程名称">
+          <el-input v-model="saveForm.planName" placeholder="请输入行程名称"></el-input>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="saveDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitSavePlan">保存</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -183,13 +198,17 @@ const nearbyInfo = ref({
 const activeTab = ref('spot')
 // const nearbyMarkers = ref([])  // 保存当前显示的附近 POI Marker
 
-
+const userId = localStorage.getItem('userId')
 const planResult = ref([])
 const selectedDay = ref(null)
 const activeDay = ref(0)
 const loading = ref(false)
 const listening = ref(false)
 const selectedSpot = ref(null)
+const saveDialogVisible = ref(false)
+const saveForm = ref({
+  planName: ''
+})
 const colors = ['#0078FF', '#28A745', '#FFC107', '#DC3545', '#6610F2', '#17A2B8']
 const amapKey = import.meta.env.VITE_AMAP_KEY
 
@@ -343,15 +362,24 @@ const fetchNearbyInfo = async (spot) => {
   }
 }
 
-// 保存行程
-const handleSavePlan = async () => {
+/// 点击“保存行程”按钮，弹出对话框
+const openSaveDialog = () => {
+  console.log('按钮点击了')
+
   if (!form.value.destination || !planResult.value.length) {
     ElMessage.warning('请先生成行程并填写必要信息')
     return
   }
+  saveForm.value.planName = '' // 重置表单
+  saveDialogVisible.value = true
+}
 
-  const planName = prompt('请输入行程名称', '我的旅行计划')
-  if (!planName) return
+// 提交表单
+const submitSavePlan = async () => {
+  if (!saveForm.value.planName) {
+    ElMessage.warning('请输入行程名称')
+    return
+  }
 
   const simplifiedPlan = planResult.value.map(day => ({
     day: day.day,
@@ -363,7 +391,8 @@ const handleSavePlan = async () => {
   }))
 
   const payload = {
-    planName,
+    // userId: localStorage.getItem('userId'),
+    planName: saveForm.value.planName,
     destination: form.value.destination,
     days: form.value.days,
     budget: form.value.budget,
@@ -372,13 +401,14 @@ const handleSavePlan = async () => {
     plan: simplifiedPlan
   }
 
-  // ✅ 在控制台打印 payload，验证格式
   console.log('要发送的行程数据:', JSON.stringify(payload, null, 2))
 
   try {
-    const res = await savePlan(payload)
+    console.log('用户ID:', userId)
+    const res = await savePlan(payload, userId)
     if (res.data.code === 1) {
       ElMessage.success('行程已保存！')
+      saveDialogVisible.value = false
     } else {
       ElMessage.error(res.data.msg || '保存失败')
     }
@@ -548,5 +578,4 @@ const handleSavePlan = async () => {
   color: #999;
   margin-top: 20px;
 }
-
 </style>
