@@ -475,6 +475,43 @@ const submitSavePlan = async () => {
   padding: 20px;
 }
 
+@media (max-width: 1024px) {
+  .create-plan-container {
+    padding: 10px;
+  }
+  
+  :deep(.el-row) {
+    flex-direction: column;
+  }
+  
+  :deep(.el-col) {
+    width: 100% !important;
+  }
+  
+  .map {
+    height: 400px;
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .create-plan-container {
+    padding: 8px;
+  }
+  
+  .map {
+    height: 300px;
+  }
+  
+  .nearby-cards {
+    flex-direction: column;
+  }
+  
+  .nearby-card {
+    max-width: 100%;
+  }
+}
+
 .header-card {
   margin-bottom: 24px;
   border-radius: 16px;

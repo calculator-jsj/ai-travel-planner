@@ -1,0 +1,11 @@
+target/
+.mvn/
+.m2/
+.idea/
+*.iml
+*.log
+.DS_Store
+*.class
+.git/
+.gitignore
+*.md

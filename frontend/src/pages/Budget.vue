@@ -731,4 +731,52 @@ const startAnalysis = async () => {
   color: #991b1b;
   font-weight: 500;
 }
+
+@media (max-width: 1024px) {
+  .budget-container {
+    padding: 10px;
+  }
+  
+  :deep(.el-row) {
+    flex-direction: column;
+  }
+  
+  :deep(.el-col) {
+    width: 100% !important;
+  }
+  
+  .ai-card {
+    position: relative;
+    top: 0;
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .budget-container {
+    padding: 8px;
+  }
+  
+  .summary-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .expense-form {
+    flex-direction: column;
+  }
+  
+  :deep(.expense-form .el-form-item) {
+    width: 100%;
+    margin-right: 0;
+  }
+  
+  .chart-card {
+    margin-top: 16px;
+  }
+  
+  #chartRef {
+    height: 300px !important;
+  }
+}
 </style>
