@@ -2,8 +2,13 @@
   <div class="plan-list-container">
     <!-- 顶部标题 -->
     <el-card class="header-card">
-      <h2>🗂 我的行程</h2>
-      <p>在这里查看、管理、或导出你创建的所有AI行程</p>
+      <div class="header-content">
+        <div class="title-wrapper">
+          <el-icon :size="32" color="#409EFF"><FolderOpened /></el-icon>
+          <h2>我的行程</h2>
+        </div>
+        <p class="subtitle">在这里查看、管理、或导出你创建的所有AI行程</p>
+      </div>
     </el-card>
 
     <!-- 搜索栏 -->
@@ -50,12 +55,21 @@
         <el-card class="plan-card" shadow="hover">
           <div class="card-header">
             <h3>{{ plan.title }}</h3>
-            <p class="created-time">🕒 {{ formatDate(plan.createdAt) }}</p>
+            <p class="created-time">
+              <el-icon><Clock /></el-icon>
+              {{ formatDate(plan.createdAt) }}
+            </p>
           </div>
 
           <div class="card-body">
-            <p><i class="el-icon-date"></i> 天数：{{ plan.days }} 天</p>
-            <p><i class="el-icon-money"></i> 预算：¥{{ plan.budget }}</p>
+            <div class="info-item">
+              <el-icon><Calendar /></el-icon>
+              <span>天数：{{ plan.days }} 天</span>
+            </div>
+            <div class="info-item">
+              <el-icon><Money /></el-icon>
+              <span>预算：¥{{ plan.budget.toLocaleString() }}</span>
+            </div>
 
             <div class="tag-container">
               <span>偏好：</span>
@@ -71,11 +85,11 @@
 
           <div class="card-footer">
             <div class="footer-left">
-              <el-button size="small" @click="viewPlan(plan)">查看详情</el-button>
+              <el-button size="small" @click="viewPlan(plan)" :icon="View">查看详情</el-button>
             </div>
             <div class="footer-right">
-              <el-button size="small" type="success" text @click="exportPlan(plan)">导出</el-button>
-              <el-button size="small" type="danger" text @click="deletePlan(plan.id)">删除</el-button>
+              <el-button size="small" type="success" text @click="exportPlan(plan)" :icon="Download">导出</el-button>
+              <el-button size="small" type="danger" text @click="deletePlan(plan.id)" :icon="Delete">删除</el-button>
             </div>
           </div>
 
@@ -90,8 +104,14 @@
         <div class="plan-summary">
           <h2>{{ selectedPlan.title }}</h2>
           <div class="meta">
-            <span>🗓 {{ selectedPlan.days }} 天</span>
-            <span>💰 预算 ¥{{ selectedPlan.budget }}</span>
+            <span>
+              <el-icon><Calendar /></el-icon>
+              {{ selectedPlan.days }} 天
+            </span>
+            <span>
+              <el-icon><Money /></el-icon>
+              预算 ¥{{ selectedPlan.budget.toLocaleString() }}
+            </span>
           </div>
           <div class="tags">
             <el-tag v-for="tag in parsePreferences(selectedPlan.preferences)" :key="tag" :type="tagColor(tag)"
@@ -116,8 +136,14 @@
               <el-row v-else :gutter="12" class="spot-grid">
                 <el-col v-for="spot in currentDayData.spots" :key="spot.id" :xs="24" :sm="12">
                   <el-card shadow="hover" class="spot-card">
-                    <h4 class="spot-name">{{ spot.name }}</h4>
-                    <p class="spot-type">📍 {{ spot.type }}</p>
+                    <div class="spot-header">
+                      <el-icon class="spot-icon"><LocationFilled /></el-icon>
+                      <h4 class="spot-name">{{ spot.name }}</h4>
+                    </div>
+                    <p class="spot-type">
+                      <el-icon><Collection /></el-icon>
+                      {{ spot.type }}
+                    </p>
                     <p class="spot-desc">{{ spot.description }}</p>
                   </el-card>
                 </el-col>
@@ -138,6 +164,17 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { 
+  FolderOpened, 
+  Clock, 
+  Calendar, 
+  Money, 
+  View, 
+  Download, 
+  Delete,
+  LocationFilled,
+  Collection
+} from '@element-plus/icons-vue'
 import { getPlansByUserId, searchPlans, deletePlanById } from '@/api/plan'
 import { getSpotsByPlanId } from '@/api/spot'
 
@@ -279,6 +316,11 @@ const currentDayData = computed(() => {
   return current || planDetails.value[0]
 })
 
+// ====================== 导出行程 ======================
+const exportPlan = (plan) => {
+  ElMessage.info('导出功能开发中，敬请期待')
+}
+
 // ====================== 删除行程 ======================
 const deletePlan = async (planId) => {
   try {
@@ -322,8 +364,37 @@ onMounted(loadPlans)
 }
 
 .header-card {
+  margin-bottom: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.header-content {
   text-align: center;
-  margin-bottom: 20px;
+  color: #fff;
+}
+
+.title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.title-wrapper h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
 }
 
 .search-card {
@@ -338,14 +409,16 @@ onMounted(loadPlans)
 
 .plan-card {
   margin-bottom: 20px;
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
-  transition: all 0.25s ease;
+  transition: all 0.3s ease;
+  border: 1px solid #e5e7eb;
 }
 
 .plan-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-6px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #667eea;
 }
 
 .card-header {
@@ -362,13 +435,29 @@ onMounted(loadPlans)
 }
 
 .created-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
-  color: #999;
+  color: #9ca3af;
 }
 
-.card-body p {
-  margin: 6px 0;
-  color: #555;
+.card-body {
+  margin: 16px 0;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.info-item .el-icon {
+  color: #667eea;
+  font-size: 16px;
 }
 
 .tag-container {
@@ -457,27 +546,47 @@ onMounted(loadPlans)
 }
 
 .spot-card {
-  border-radius: 10px;
-  padding: 8px 12px;
+  border-radius: 12px;
+  padding: 16px;
   background: #fafafa;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  height: 100%;
+  border: 1px solid #e5e7eb;
 }
 
 .spot-card:hover {
-  background: #f5f7fa;
+  background: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #667eea;
 }
 
 .spot-header {
-  font-size: 15px;
-  margin-bottom: 4px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.spot-icon {
+  color: #667eea;
+  font-size: 18px;
+}
+
+.spot-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
 }
 
 .spot-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
-  color: #999;
+  color: #9ca3af;
+  margin-bottom: 8px;
 }
 
 .spot-desc {
@@ -601,10 +710,23 @@ onMounted(loadPlans)
 .plan-summary .meta {
   display: flex;
   justify-content: center;
-  gap: 18px;
+  gap: 24px;
   font-size: 14px;
-  color: #666;
+  color: #6b7280;
   margin-bottom: 8px;
+}
+
+.plan-summary .meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.plan-summary .meta .el-icon {
+  color: #667eea;
 }
 
 .plan-summary .tags {

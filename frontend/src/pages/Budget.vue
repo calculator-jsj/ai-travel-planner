@@ -3,10 +3,18 @@
     <!-- 顶部标题 -->
     <el-card class="header-card">
       <div class="header-content">
-        <h2>💰 旅行预算管理</h2>
-        <p>管理你的每笔支出，实时掌握行程预算动态</p>
+        <div class="title-wrapper">
+          <el-icon :size="32" color="#409EFF"><Money /></el-icon>
+          <h2>旅行预算管理</h2>
+        </div>
+        <p class="subtitle">管理你的每笔支出，实时掌握行程预算动态</p>
       </div>
     </el-card>
+
+    <!-- 左右分栏布局 -->
+    <el-row :gutter="20">
+      <!-- 左侧：原有内容 -->
+      <el-col :span="16">
 
     <!-- 汇总信息 -->
     <el-card v-if="currentPlan" class="summary-card">
@@ -62,16 +70,19 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="addExpense">添加</el-button>
-          <el-button @click="resetForm">重置</el-button>
-          <el-button @click="startVoiceInput">🎤 语音记账</el-button>
+          <el-button type="primary" @click="addExpense" :icon="Plus">添加</el-button>
+          <el-button @click="resetForm" :icon="Refresh">重置</el-button>
+          <el-button @click="startVoiceInput" :icon="Microphone">语音记账</el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
     <!-- 支出记录 -->
     <el-card class="table-card">
-      <h3>📘 支出记录</h3>
+      <div class="table-header">
+        <el-icon :size="24" color="#409EFF"><List /></el-icon>
+        <h3>支出记录</h3>
+      </div>
       <el-table :data="expenses" style="width: 100%">
         <el-table-column prop="category" label="类别" width="120" />
         <el-table-column label="金额 (¥)" width="120">
@@ -95,7 +106,10 @@
     <!-- 图表分析 -->
     <el-card class="chart-card">
       <div class="chart-header">
-        <h3>📊 支出分析</h3>
+        <div class="chart-title">
+          <el-icon :size="24" color="#409EFF"><DataAnalysis /></el-icon>
+          <h3>支出分析</h3>
+        </div>
         <el-select v-model="chartType" size="small" style="width: 120px">
           <el-option label="类别占比" value="pie" />
           <el-option label="每日趋势" value="line" />
@@ -104,23 +118,107 @@
       <div ref="chartRef" style="height: 400px"></div>
     </el-card>
 
-    <!-- AI 预算分析预留区 -->
-    <el-card class="ai-card">
-      <div class="ai-analysis">
-        <h3>🤖 AI 智能分析（开发中）</h3>
-        <p>AI 将为你分析消费趋势，并给出优化建议。</p>
-        <el-button type="primary" plain disabled>即将上线</el-button>
-      </div>
-    </el-card>
+      </el-col>
+
+      <!-- 右侧：AI智能分析 -->
+      <el-col :span="8">
+        <el-card class="ai-card">
+          <div class="ai-header">
+            <el-icon :size="24" color="#409EFF"><Connection /></el-icon>
+            <h3>AI 智能分析</h3>
+          </div>
+          
+          <div v-if="!aiAnalysis" class="ai-empty">
+            <el-icon :size="48" color="#909399"><MagicStick /></el-icon>
+            <p>点击开始分析，AI将为你分析消费趋势并给出优化建议</p>
+            <el-button 
+              type="primary" 
+              :icon="MagicStick" 
+              :loading="analyzing"
+              :disabled="!currentPlan || expenses.length === 0"
+              @click="startAnalysis"
+            >
+              开始分析
+            </el-button>
+            <p v-if="!currentPlan || expenses.length === 0" class="hint-text">
+              请先选择行程并添加支出记录
+            </p>
+          </div>
+
+          <div v-else class="ai-content">
+            <div class="analysis-section">
+              <div class="section-title">
+                <el-icon><DataLine /></el-icon>
+                <span>消费趋势</span>
+              </div>
+              <div class="section-content">{{ aiAnalysis.consumptionTrend }}</div>
+            </div>
+
+            <div class="analysis-section">
+              <div class="section-title">
+                <el-icon><InfoFilled /></el-icon>
+                <span>优化建议</span>
+              </div>
+              <ul class="suggestions-list">
+                <li v-for="(suggestion, index) in aiAnalysis.suggestions" :key="index">
+                  {{ suggestion }}
+                </li>
+              </ul>
+            </div>
+
+            <div class="analysis-section">
+              <div class="section-title">
+                <el-icon><Document /></el-icon>
+                <span>预算总结</span>
+              </div>
+              <div class="section-content">{{ aiAnalysis.budgetSummary }}</div>
+            </div>
+
+            <div v-if="aiAnalysis.riskWarning && aiAnalysis.riskWarning !== '暂无风险'" class="analysis-section risk-section">
+              <div class="section-title">
+                <el-icon><Warning /></el-icon>
+                <span>风险提示</span>
+              </div>
+              <div class="section-content risk-content">{{ aiAnalysis.riskWarning }}</div>
+            </div>
+
+            <el-button 
+              type="primary" 
+              :icon="Refresh" 
+              :loading="analyzing"
+              @click="startAnalysis"
+              style="width: 100%; margin-top: 16px;"
+            >
+              重新分析
+            </el-button>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import { 
+  Money, 
+  Plus, 
+  Refresh, 
+  Microphone, 
+  List, 
+  DataAnalysis, 
+  Connection, 
+  MagicStick,
+  DataLine,
+  InfoFilled,
+  Document,
+  Warning
+} from '@element-plus/icons-vue'
 import { getPlansByUserId } from '@/api/plan'
 import { addBudget, getBudgetByPlanId, deleteBudget } from '@/api/budget'
+import { analyzeBudget } from '@/api/ai'
 
 // 用户ID
 const userId = 1 // TODO: 后续从登录信息获取
@@ -143,6 +241,10 @@ const chartRef = ref(null)
 let chart = null
 const chartType = ref('pie')
 
+// AI分析相关
+const analyzing = ref(false)
+const aiAnalysis = ref(null)
+
 // ========== 生命周期 ==========
 onMounted(async () => {
   await loadPlans()
@@ -151,8 +253,12 @@ onMounted(async () => {
     currentPlan.value = plans.value[0]
     await loadExpenses(plans.value[0].id)
   }
-  chart = echarts.init(chartRef.value)
-  updateChart()
+  // 确保DOM已经渲染后再初始化图表
+  await nextTick()
+  if (chartRef.value) {
+    chart = echarts.init(chartRef.value)
+    updateChart()
+  }
 })
 
 // ========== 方法 ==========
@@ -189,6 +295,8 @@ const addExpense = async () => {
       // 刷新当前行程支出列表
       await loadExpenses(expenseForm.value.planId)
       resetForm()
+      // 添加支出后重置AI分析，让用户重新分析
+      aiAnalysis.value = null
     } else {
       ElMessage.error(res.data.msg || '添加失败')
     }
@@ -231,6 +339,8 @@ const deleteExpense = async (index) => {
       expenses.value.splice(index, 1)
       updateChart()
       ElMessage.success('删除成功')
+      // 删除支出后重置AI分析
+      aiAnalysis.value = null
     } else {
       ElMessage.error(res.data.msg || '删除失败')
     }
@@ -244,6 +354,8 @@ const deleteExpense = async (index) => {
 const onPlanChange = async (planId) => {
   currentPlan.value = plans.value.find(p => p.id === planId) || null
   await loadExpenses(planId)
+  // 切换行程时重置AI分析
+  aiAnalysis.value = null
 }
 
 
@@ -321,36 +433,124 @@ const budgetPercent = computed(() => {
   if (!currentPlan.value?.budget) return 0
   return Math.min(((totalExpense.value / currentPlan.value.budget) * 100).toFixed(1), 100)
 })
+
+// ========== AI分析功能 ==========
+const startAnalysis = async () => {
+  if (!currentPlan.value || expenses.value.length === 0) {
+    ElMessage.warning('请先选择行程并添加支出记录')
+    return
+  }
+
+  analyzing.value = true
+  aiAnalysis.value = null
+
+  try {
+    // 构建分析数据
+    const payload = {
+      planId: currentPlan.value.id,
+      planTitle: currentPlan.value.title,
+      totalBudget: currentPlan.value.budget,
+      totalExpense: totalExpense.value,
+      budgetUsage: budgetPercent.value,
+      days: currentPlan.value.days,
+      expenses: expenses.value.map(e => ({
+        category: e.category,
+        amount: Number(e.amount),
+        date: e.date,
+        remark: e.remark
+      }))
+    }
+
+    const res = await analyzeBudget(payload)
+    if (res.data.code === 1) {
+      aiAnalysis.value = res.data.data
+      ElMessage.success('AI分析完成')
+    } else {
+      ElMessage.error(res.data.msg || '分析失败')
+    }
+  } catch (err) {
+    console.error('AI分析失败:', err)
+    ElMessage.error('服务器异常，分析失败')
+  } finally {
+    analyzing.value = false
+  }
+}
 </script>
 
 <style scoped>
 .budget-container {
-  max-width: 1100px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 20px;
 }
 
 .header-card {
-  margin-bottom: 20px;
-  background: linear-gradient(135deg, #dff1ff, #f7faff);
+  margin-bottom: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
 }
 
-.header-content h2 {
+.header-content {
+  text-align: center;
+  color: #fff;
+}
+
+.title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.title-wrapper h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9);
   margin: 0;
 }
 
 .summary-card {
   margin-bottom: 20px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .summary-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.summary-info > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.summary-info strong {
+  color: #1f2937;
+  font-weight: 600;
 }
 
 .form-card {
   margin-bottom: 20px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .expense-form .el-form-item {
@@ -359,22 +559,176 @@ const budgetPercent = computed(() => {
 
 .table-card {
   margin-bottom: 20px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.table-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 .chart-card {
   margin-top: 20px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
+}
+
+.chart-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chart-title h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 .ai-card {
-  margin-top: 20px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 20px;
+}
+
+.ai-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ai-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.ai-empty {
   text-align: center;
-  color: #888;
+  padding: 40px 20px;
+  color: #9ca3af;
+}
+
+.ai-empty p {
+  margin: 16px 0 24px 0;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.hint-text {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.ai-content {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.ai-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ai-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.ai-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.analysis-section {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.analysis-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 12px;
+}
+
+.section-title .el-icon {
+  color: #667eea;
+  font-size: 18px;
+}
+
+.section-content {
+  color: #6b7280;
+  line-height: 1.8;
+  font-size: 14px;
+  text-align: justify;
+}
+
+.suggestions-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #6b7280;
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+.suggestions-list li {
+  margin-bottom: 10px;
+}
+
+.suggestions-list li:last-child {
+  margin-bottom: 0;
+}
+
+.risk-section {
+  background: #fef2f2;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
+}
+
+.risk-section .section-title {
+  color: #dc2626;
+}
+
+.risk-section .section-title .el-icon {
+  color: #dc2626;
+}
+
+.risk-content {
+  color: #991b1b;
+  font-weight: 500;
 }
 </style>

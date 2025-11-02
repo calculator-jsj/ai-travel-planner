@@ -2,8 +2,13 @@
   <div class="create-plan-container">
     <!-- 标题栏 -->
     <el-card class="header-card">
-      <h2>✈️ 创建智能行程</h2>
-      <p>输入或语音描述你的旅行计划，让 AI 帮你生成完整路线</p>
+      <div class="header-content">
+        <div class="title-wrapper">
+          <el-icon :size="32" color="#409EFF"><Promotion /></el-icon>
+          <h2>创建智能行程</h2>
+        </div>
+        <p class="subtitle">输入或语音描述你的旅行计划，让 AI 帮你生成完整路线</p>
+      </div>
     </el-card>
 
     <el-row :gutter="20">
@@ -41,34 +46,49 @@
 
             <!-- 语音输入按钮 -->
             <div class="voice-section">
-              <el-button type="primary" plain @click="startVoiceInput">
-                🎤 语音输入
+              <el-button type="primary" plain @click="startVoiceInput" :icon="Microphone">
+                语音输入
               </el-button>
-              <span v-if="listening" class="listening-text">正在聆听中...</span>
+              <span v-if="listening" class="listening-text">
+                <el-icon class="pulse-icon"><Microphone /></el-icon>
+                正在聆听中...
+              </span>
             </div>
 
             <!-- 提交按钮 -->
-            <el-button type="success" class="generate-btn" :loading="loading" @click="generatePlan">
+            <el-button type="primary" class="generate-btn" :loading="loading" @click="generatePlan" :icon="MagicStick">
               生成 AI 行程
             </el-button>
           </el-form>
         </el-card>
 
         <el-card v-if="planResult.length > 0" class="result-card">
-          <h3>🧭 AI 生成的旅行计划</h3>
+          <div class="result-header">
+            <el-icon :size="24" color="#409EFF"><Guide /></el-icon>
+            <h3>AI 生成的旅行计划</h3>
+          </div>
           <el-collapse v-model="activeDay">
             <el-collapse-item v-for="(day, index) in planResult" :key="index" :title="'第 ' + (index + 1) + ' 天'"
               :name="index">
-              <li v-for="(spot, i) in day.spots" :key="i">
-                <strong>{{ spot.name }}</strong>
-                <p class="spot-desc">{{ spot.description }}</p>
-              </li>
+              <div class="spot-list">
+                <div v-for="(spot, i) in day.spots" :key="i" class="spot-item">
+                  <el-icon class="spot-icon"><LocationFilled /></el-icon>
+                  <div class="spot-content">
+                    <strong>{{ spot.name }}</strong>
+                    <p class="spot-desc">{{ spot.description }}</p>
+                  </div>
+                </div>
+              </div>
             </el-collapse-item>
           </el-collapse>
 
           <div class="action-btns">
-            <el-button type="primary" @click="openSaveDialog">💾 保存行程</el-button>
-            <el-button type="warning" @click="generatePlan">🔄 重新生成</el-button>
+            <el-button type="primary" @click="openSaveDialog" :icon="Document">
+              保存行程
+            </el-button>
+            <el-button type="warning" @click="generatePlan" :icon="Refresh">
+              重新生成
+            </el-button>
           </div>
         </el-card>
       </el-col>
@@ -92,12 +112,21 @@
 
               <el-tabs v-model="activeTab">
                 <el-tab-pane label="景点信息" name="spot">
-                  <p>{{ selectedSpot.description }}</p>
-                  <p class="spot-type">🏷️ 类型：{{ selectedSpot.type }}</p>
+                  <div class="tab-content">
+                    <p>{{ selectedSpot.description }}</p>
+                    <p class="spot-type">
+                      <el-icon><Collection /></el-icon>
+                      类型：{{ selectedSpot.type }}
+                    </p>
+                  </div>
                 </el-tab-pane>
 
                 <!-- 🚉 交通 -->
-                <el-tab-pane label="🚉 交通" name="traffic">
+                <el-tab-pane name="traffic">
+                  <template #label>
+                    <el-icon><Guide /></el-icon>
+                    <span>交通</span>
+                  </template>
                   <div class="nearby-cards">
                     <div v-for="(item, index) in nearbyInfo.traffic.slice(0, 6)" :key="index" class="nearby-card">
                       <img :src="item.photoUrl || `https://dummyimage.com/120x80/cccccc/ffffff&text=image not found`" />
@@ -111,7 +140,11 @@
                 </el-tab-pane>
 
                 <!-- 🏨 住宿 -->
-                <el-tab-pane label="🏨 住宿" name="hotel">
+                <el-tab-pane name="hotel">
+                  <template #label>
+                    <el-icon><House /></el-icon>
+                    <span>住宿</span>
+                  </template>
                   <div class="nearby-cards">
                     <div v-for="(item, index) in nearbyInfo.hotel.slice(0, 6)" :key="index" class="nearby-card">
                       <img :src="item.photoUrl || `https://dummyimage.com/120x80/cccccc/ffffff&text=image not found`"
@@ -127,7 +160,11 @@
                 </el-tab-pane>
 
                 <!-- 🍽️ 餐饮 -->
-                <el-tab-pane label="🍽️ 餐饮" name="food">
+                <el-tab-pane name="food">
+                  <template #label>
+                    <el-icon><Food /></el-icon>
+                    <span>餐饮</span>
+                  </template>
                   <div class="nearby-cards">
                     <div v-for="(item, index) in nearbyInfo.food.slice(0, 6)" :key="index" class="nearby-card">
                       <img :src="item.photoUrl || `https://dummyimage.com/120x80/cccccc/ffffff&text=image not found`"
@@ -173,6 +210,18 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { 
+  Promotion, 
+  Microphone, 
+  MagicStick, 
+  Guide, 
+  LocationFilled, 
+  Document, 
+  Refresh,
+  Collection,
+  House,
+  Food
+} from '@element-plus/icons-vue'
 import { generateAIPlan } from '@/api/ai'
 import { getNearby } from '@/api/map'
 import { savePlan } from '@/api/plan'
@@ -421,43 +470,172 @@ const submitSavePlan = async () => {
 
 <style scoped>
 .create-plan-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
 }
 
 .header-card {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.header-content {
   text-align: center;
+  color: #fff;
+}
+
+.title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.title-wrapper h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
 }
 
 .form-card {
   margin-bottom: 20px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+:deep(.form-card .el-card__body) {
+  padding: 24px;
+}
+
+:deep(.form-card .el-form-item) {
+  margin-bottom: 20px;
+}
+
+:deep(.form-card .el-input__wrapper) {
+  border-radius: 8px;
 }
 
 .generate-btn {
   width: 100%;
-  margin-top: 10px;
+  margin-top: 12px;
+  height: 44px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+.voice-section {
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.listening-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #409eff;
+  font-weight: 600;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.pulse-icon {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .result-card {
   margin-top: 20px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.result-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.spot-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.spot-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #f9fafb;
+  border-radius: 12px;
+  transition: all 0.3s;
+}
+
+.spot-item:hover {
+  background: #f3f4f6;
+  transform: translateX(4px);
+}
+
+.spot-icon {
+  color: #667eea;
+  font-size: 20px;
+  margin-top: 2px;
+}
+
+.spot-content {
+  flex: 1;
+}
+
+.spot-content strong {
+  display: block;
+  font-size: 16px;
+  color: #1f2937;
+  margin-bottom: 6px;
+}
+
+.spot-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
 }
 
 .action-btns {
-  margin-top: 15px;
+  margin-top: 20px;
   display: flex;
-  gap: 10px;
-}
-
-.voice-section {
-  margin: 10px 0;
-}
-
-.listening-text {
-  margin-left: 10px;
-  color: #409eff;
-  font-weight: bold;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .map {
@@ -468,31 +646,56 @@ const submitSavePlan = async () => {
 .map-header {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+:deep(.map-header .el-select) {
+  width: 180px;
+}
+
+.map {
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .spot-card {
-  margin-top: 10px;
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 16px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
 }
 
 .spot-card h3 {
-  margin: 0 0 5px 0;
-  font-size: 18px;
-  color: #333;
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .spot-card p {
-  margin: 5px 0;
-  color: #555;
+  margin: 8px 0;
+  color: #6b7280;
+  line-height: 1.6;
 }
 
 .spot-type {
-  font-style: italic;
-  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #9ca3af;
+  font-size: 14px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.tab-content {
+  padding: 8px 0;
 }
 
 .fade-enter-active,
