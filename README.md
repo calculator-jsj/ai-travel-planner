@@ -8,7 +8,7 @@
 
 一个基于 AI 的智能旅行规划 Web 应用，通过语音或文字输入，自动生成个性化旅行路线。
 
-[功能特性](#功能特性) • [技术栈](#技术栈) • [快速开始](#快速开始) • [Docker 部署](#docker-部署) • [API Key 配置](#api-key-配置)
+[功能特性](#功能特性) • [技术栈](#技术栈) • [快速开始](#快速开始) • [Docker 部署](#docker-部署) • [使用已构建镜像](#使用已构建的镜像助教运行) • [API Key 配置](#api-key-配置)
 
 </div>
 
@@ -248,6 +248,32 @@ docker-compose down
 
 - 前端：http://localhost
 - 后端 API：http://localhost:8080
+
+### 使用已构建的镜像（助教运行）
+
+如果已经通过 GitHub Actions 构建好镜像，可以直接使用镜像运行：
+
+```bash
+# 1. 配置环境变量
+cp env.example .env
+# 编辑 .env 文件，填入 API Keys
+
+# 2. 使用生产环境配置文件启动
+docker-compose -f docker-compose.prod.yml up -d
+
+# 3. 初始化数据库（等待 MySQL 启动后）
+docker exec -i ai-travel-mysql mysql -uroot -p123456 ai_travel < backend/sql/init.sql
+
+# 4. 访问应用
+# 前端: http://localhost
+# 后端: http://localhost:8080
+```
+
+**已构建的镜像地址**：
+- 后端：`crpi-92srg3fhfl4qlq1a.cn-hangzhou.personal.cr.aliyuncs.com/jsj-namespace/ai-travel-backend:latest`
+- 前端：`crpi-92srg3fhfl4qlq1a.cn-hangzhou.personal.cr.aliyuncs.com/jsj-namespace/ai-travel-frontend:latest`
+
+**详细运行指南请参考 [INSTALL_GUIDE.md](./INSTALL_GUIDE.md)**
 
 ### 单独构建 Docker 镜像
 

@@ -1,0 +1,66 @@
+version: '3.8'
+
+# 生产环境/助教运行配置文件
+# 使用已构建好的阿里云镜像
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: ai-travel-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ai_travel}
+      MYSQL_USER: ${MYSQL_USER:-travel_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-travel_pass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/sql:/docker-entrypoint-initdb.d:ro
+    networks:
+      - ai-travel-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-123456}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 后端服务 - 使用已构建的镜像
+  backend:
+    image: crpi-92srg3fhfl4qlq1a.cn-hangzhou.personal.cr.aliyuncs.com/jsj-namespace/ai-travel-backend:latest
+    container_name: ai-travel-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-ai_travel}?useSSL=false&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-travel_user}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-travel_pass}
+      API-KEY: ${API_KEY}
+      GAODE-MAP-KEY: ${GAODE_MAP_KEY}
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ai-travel-network
+    restart: unless-stopped
+
+  # 前端服务 - 使用已构建的镜像
+  frontend:
+    image: crpi-92srg3fhfl4qlq1a.cn-hangzhou.personal.cr.aliyuncs.com/jsj-namespace/ai-travel-frontend:latest
+    container_name: ai-travel-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - ai-travel-network
+    restart: unless-stopped
+
+networks:
+  ai-travel-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
