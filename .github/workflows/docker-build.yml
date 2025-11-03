@@ -43,8 +43,8 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/ai-travel-backend:latest
             ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/ai-travel-backend:${{ github.sha }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.NAMESPACE }}/ai-travel-backend:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.NAMESPACE }}/ai-travel-backend:buildcache,mode=max
+          # cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.NAMESPACE }}/ai-travel-backend:buildcache
+          # cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.NAMESPACE }}/ai-travel-backend:buildcache,mode=max
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v4
