@@ -14,8 +14,7 @@ on:
 
 env:
   REGISTRY: registry.cn-hangzhou.aliyuncs.com
-  # 请修改为你的命名空间
-  NAMESPACE: your-namespace
+  NAMESPACE: jsj-namespace
 
 jobs:
   build:
