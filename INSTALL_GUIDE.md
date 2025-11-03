@@ -69,112 +69,35 @@ docker pull crpi-92srg3fhfl4qlq1a.cn-hangzhou.personal.cr.aliyuncs.com/jsj-names
 ```bash
 docker-compose -f docker-compose.prod.yml up -d
 ```
+#### 如果启动mysql报错，可能是因为3306端口被占用，需要先停止占用该端口的进程。
+```bash
+#查找占用 3306 端口的进程
+netstat -tuln | grep 3306
 
+#停止占用该端口的进程（例如 PID 为 1234）
+kill -9 1234
+```
 ### 5. 初始化数据库
 
 等待 MySQL 服务启动完成后（约 30 秒），执行数据库初始化脚本：
 
 ```bash
-# 方法一：如果项目包含 SQL 脚本
+# 直接使用项目包含的 SQL 脚本
 docker exec -i ai-travel-mysql mysql -uroot -p123456 ai_travel < backend/sql/init.sql
 
-# 方法二：手动执行 SQL（如果方法一失败）
+# 如果 travel_user 或 root 使用 caching_sha2_password，Spring Boot 连接可能出错。推荐改成 mysql_native_password：
 docker exec -it ai-travel-mysql mysql -uroot -p123456
-```
+ALTER USER 'travel_user'@'%' IDENTIFIED WITH mysql_native_password BY 'travel_pass';
+FLUSH PRIVILEGES;
 
-在 MySQL 命令行中执行：
-
-```sql
-USE ai_travel;
-SOURCE /docker-entrypoint-initdb.d/init.sql;
--- 或者手动创建表结构（见下方）
-```
-
-**如果 SQL 文件不存在，可以手动创建数据库表**：
-
-```sql
-CREATE DATABASE IF NOT EXISTS ai_travel CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE ai_travel;
-
--- 用户表
-CREATE TABLE IF NOT EXISTS `user` (
-  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-  `username` VARCHAR(50) NOT NULL UNIQUE,
-  `password` VARCHAR(255) NOT NULL,
-  `email` VARCHAR(100),
-  `avatar` VARCHAR(255),
-  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 行程表
-CREATE TABLE IF NOT EXISTS `plan` (
-  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` BIGINT NOT NULL,
-  `title` VARCHAR(200) NOT NULL,
-  `start_date` DATE,
-  `end_date` DATE,
-  `days` INT DEFAULT 1,
-  `budget` DECIMAL(10,2) DEFAULT 0.00,
-  `destination` VARCHAR(200),
-  `people` INT DEFAULT 1,
-  `preferences` TEXT,
-  `plan_data` TEXT,
-  `status` INT DEFAULT 1,
-  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_user_id` (`user_id`),
-  FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 景点表
-CREATE TABLE IF NOT EXISTS `spot` (
-  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-  `plan_id` BIGINT NOT NULL,
-  `day` INT NOT NULL,
-  `name` VARCHAR(200) NOT NULL,
-  `lng` DECIMAL(10,7),
-  `lat` DECIMAL(10,7),
-  `type` VARCHAR(50),
-  `description` TEXT,
-  `order_index` INT DEFAULT 0,
-  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_plan_id` (`plan_id`),
-  FOREIGN KEY (`plan_id`) REFERENCES `plan`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 预算表
-CREATE TABLE IF NOT EXISTS `budget` (
-  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-  `plan_id` BIGINT NOT NULL,
-  `category` VARCHAR(50) NOT NULL,
-  `amount` DECIMAL(10,2) NOT NULL,
-  `remark` VARCHAR(500),
-  `expense_date` DATE,
-  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_plan_id` (`plan_id`),
-  FOREIGN KEY (`plan_id`) REFERENCES `plan`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 用户偏好表
-CREATE TABLE IF NOT EXISTS `user_preference` (
-  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` BIGINT NOT NULL UNIQUE,
-  `preferences` TEXT,
-  `travel_style` VARCHAR(50),
-  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_user_id` (`user_id`),
-  FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-```
 
 ### 6. 检查服务状态
 
 ```bash
 docker-compose -f docker-compose.prod.yml ps
+
+# 必要时可以重启后端服务，确保数据库初始化完成：
+docker restart ai-travel-backend
 ```
 
 应该看到三个服务都在运行：
@@ -211,15 +134,6 @@ docker-compose -f docker-compose.prod.yml logs mysql
 4. **预算管理**：记录旅行支出，查看 AI 预算分析
 
 ## 🔍 验证服务是否正常运行
-
-### 检查后端服务
-
-```bash
-# 检查后端是否启动成功
-curl http://localhost:8080/api/health
-# 或者
-curl http://localhost:8080/api/users/test
-```
 
 ### 检查数据库连接
 
