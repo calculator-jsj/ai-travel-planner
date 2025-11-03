@@ -13,7 +13,7 @@ on:
       - master
 
 env:
-  REGISTRY: registry.cn-hangzhou.aliyuncs.com
+  REGISTRY: crpi-92srg3fhfl4qlq1a.cn-hangzhou.personal.cr.aliyuncs.com
   NAMESPACE: jsj-namespace
 
 jobs:
